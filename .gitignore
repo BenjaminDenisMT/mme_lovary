@@ -1,2 +1,3 @@
-
 *.zip
+*.vscode
+__pycache__/test.cpython-37.pyc
