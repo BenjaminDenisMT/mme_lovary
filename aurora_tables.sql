@@ -1,15 +1,31 @@
 CREATE TABLE inventory_level (
-  inventory_id VARCHAR(20) NOT NULL,
-  inventory_level INTEGER NOT NULL,
-  last_modification_time TIMESTAMPTZ NOT NULL,
-  run_date DATE NOT NULL
+    inventory_id VARCHAR(20) NOT NULL,
+    inventory_level INTEGER NOT NULL,
+    last_modification_time TIMESTAMPTZ NOT NULL,
+    run_date DATE NOT NULL
 );
 
 CREATE TABLE products_informations (
-  inventory_id VARCHAR(20) NOT NULL,
-  product_name VARCHAR (100) NOT NULL,
-  variants VARCHAR (50) NOT NULL
+    inventory_id VARCHAR(20) NOT NULL,
+    product_name VARCHAR (100) NOT NULL,
+    variants VARCHAR (50) NOT NULL
 );
+
+CREATE TABLE daily_orders (
+    variant_id VARCHAR(20) NOT NULL,
+    title VARCHAR (100) NOT NULL,
+    quantity VARCHAR (50) NOT NULL,
+    sku VARCHAR (100) NOT NULL,
+    variant_title VARCHAR (100) NOT NULL,
+    name VARCHAR (100) NOT NULL,
+    price FLOAT NOT NULL,
+    total_discount FLOAT NOT NULL,
+    province VARCHAR (50) NOT NULL,
+    country VARCHAR (50) NOT NULL,
+    created_at DATE NOT NULL,
+    updated_at DATE NOT NULL
+);
+
 
 SELECT
     inventory_level.inventory_id,
