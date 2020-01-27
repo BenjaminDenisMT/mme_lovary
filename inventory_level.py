@@ -59,38 +59,20 @@ class Response:
 
     def send_request(self) -> Dict[str, str]:
         """Send a request and convert the response to a Json."""
-        response = True
-        request_response = []
-        auth = self.url[:74]
-        while response:
-            try:
-                if not self.request_parameters:
-                    r = requests.get(self.url)
-                    logger.info(r.url)
-                else:
-                    r = requests.get(self.url, params=self.request_parameters)
-                    logger.info(r.url)
-
-                r.raise_for_status()
-
-            except RequestException as e:
-                raise ValueError(f"Request Exception cause by: {e}")
-
-            if not r.headers.get('Link'):
-                response = False
-
-            elif r.links.get('next'):
-                url = r.links['next']['url'][8:]
-                self.url = auth + url
-                self.request_parameters = None
-
+        try:
+            if not self.request_parameters:
+                r = requests.get(self.url)
+                logger.info(r.url)
             else:
-                response = False
+                r = requests.get(self.url, params=self.request_parameters)
+                logger.info(r.url)
 
-            call = r.json()
-            request_response.append(call)
+            r.raise_for_status()
 
-        return request_response
+        except RequestException as e:
+            raise ValueError(f"Request Exception cause by: {e}")
+
+        return r.json()
 
 
 @dataclass
@@ -132,22 +114,20 @@ def lambda_handler(event, context):
     logger.info("Fetch iventory products ids")
     request_product = Response(MmeLovary().generate_url(
         ShopifyRequestType.product)).send_request()
-    for i in request_product:
-        for product in i['products']:
-            for variants in product['variants']:
-                if variants['inventory_item_id'] not in product_ids:
-                    product_ids.append(str(variants['inventory_item_id']))
+    for product in request_product['products']:
+        for variants in product['variants']:
+            if variants['inventory_item_id'] not in product_ids:
+                product_ids.append(str(variants['inventory_item_id']))
 
-    list_product_ids = {'inventory_item_ids': ','.join(product_ids), 'limit': '250'}
+    list_product_ids = {'inventory_item_ids': ','.join(product_ids)}
     logger.info("Fetch iventory level")
     request_inventory_level = Response(MmeLovary().generate_url(
         ShopifyRequestType.inventory_level), list_product_ids).send_request()
 
     logger.info("Sending inventory level to the database")
-    for i in request_inventory_level:
-        for product_level in i['inventory_levels']:
-            insert_into = f"""
-            INSERT INTO inventory_level (inventory_id, inventory_level, last_modification_time, run_date)
-            values({product_level['inventory_item_id']}, {product_level['available']}, '{datetime.fromisoformat(product_level['updated_at'])}', '{date.today()}')
-            """
-            RdsConnector().query_database(insert_into)
+    for product_level in request_inventory_level['inventory_levels']:
+        insert_into = f"""
+        INSERT INTO inventory_level (inventory_id, inventory_level, last_modification_time, run_date)
+        values({product_level['inventory_item_id']}, {product_level['available']}, '{datetime.fromisoformat(product_level['updated_at'])}', '{date.today()}')
+        """
+        RdsConnector().query_database(insert_into)
