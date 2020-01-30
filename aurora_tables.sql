@@ -14,7 +14,7 @@ CREATE TABLE products_informations (
 CREATE TABLE daily_orders (
     variant_id VARCHAR(20) NOT NULL,
     title VARCHAR (100) NOT NULL,
-    quantity VARCHAR (50) NOT NULL,
+    quantity INT NOT NULL,
     sku VARCHAR (100) NOT NULL,
     variant_title VARCHAR (100) NOT NULL,
     name VARCHAR (100) NOT NULL,
@@ -23,7 +23,8 @@ CREATE TABLE daily_orders (
     province VARCHAR (50) NOT NULL,
     country VARCHAR (50) NOT NULL,
     created_at DATE NOT NULL,
-    updated_at DATE NOT NULL
+    updated_at DATE NOT NULL,
+    source_name VARCHAR (50) NOT NULL
 );
 
 
