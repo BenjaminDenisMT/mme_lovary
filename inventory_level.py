@@ -28,27 +28,25 @@ class ShopifyRequestType(Enum):
     shop_detail = "shop"
     product = "products"
     product_count = "products/count"
+    order = "orders"
+    locations = "locations"
 
 
 @dataclass
 class ShopifyIdentification:
     """Generate the url needed by the Shopify API."""
-    username: str
-    password: str
     shop: str
     url_base: str = "myshopify.com/admin/api/"
     version: str = ShopifyApiVersion.V4.value
 
     def generate_url(self, request_type: ShopifyRequestType) -> str:
-        url = f"https://{self.username}:{self.password}@{self.shop}.{self.url_base}{self.version}/{request_type.value}.json"
+        url = f"https://{self.shop}.{self.url_base}{self.version}/{request_type.value}.json"
         logger.info(url)
         return url
 
 
 @dataclass
 class MmeLovary(ShopifyIdentification):
-    username: str = os.environ['username']
-    password: str = os.environ['password']
     shop: str = "test-mme"
 
 
@@ -56,19 +54,28 @@ class MmeLovary(ShopifyIdentification):
 class Response:
     url: str
     request_parameters: Dict[str, Any] = None
+    username: str = os.environ['username']
+    password: str = os.environ['password']
 
     def send_request(self) -> Dict[str, str]:
         """Send a request and convert the response to a Json."""
+
         response = True
         request_response = []
-        auth = self.url[:74]
         while response:
             try:
                 if not self.request_parameters:
-                    r = requests.get(self.url)
+                    r = requests.get(
+                        self.url, 
+                        auth=(self.username, self.password)
+                    )
                     logger.info(r.url)
                 else:
-                    r = requests.get(self.url, params=self.request_parameters)
+                    r = requests.get(
+                        self.url,
+                        auth=(self.username, self.password),
+                        params=self.request_parameters
+                    )
                     logger.info(r.url)
 
                 r.raise_for_status()
@@ -80,8 +87,7 @@ class Response:
                 response = False
 
             elif r.links.get('next'):
-                url = r.links['next']['url'][8:]
-                self.url = auth + url
+                self.url = r.links['next']['url']
                 self.request_parameters = None
 
             else:
@@ -127,27 +133,49 @@ class RdsConnector:
                 logger.info("Connection closed")
 
 
+def split_product_list(list_invenoty_id: List[str], value: int = 50):
+    for i in range(0, len(list_invenoty_id), value):
+        yield list_invenoty_id[i:i + value]
+
+
 def lambda_handler(event, context):
-    product_ids = []
+    product_ids: List[str] = []
+    locations_list: List[str] = []
+
     logger.info("Fetch iventory products ids")
+    list_product = {'limit': '250'}
     request_product = Response(MmeLovary().generate_url(
-        ShopifyRequestType.product)).send_request()
+        ShopifyRequestType.product), list_product).send_request()
     for i in request_product:
         for product in i['products']:
             for variants in product['variants']:
                 if variants['inventory_item_id'] not in product_ids:
                     product_ids.append(str(variants['inventory_item_id']))
 
-    list_product_ids = {'inventory_item_ids': ','.join(product_ids), 'limit': '250'}
-    logger.info("Fetch iventory level")
-    request_inventory_level = Response(MmeLovary().generate_url(
-        ShopifyRequestType.inventory_level), list_product_ids).send_request()
+    logger.info("inventory store locations")
+    request_locations = Response(MmeLovary().generate_url(
+        ShopifyRequestType.locations)).send_request()
+    for location in request_locations:
+        for location_id in location["locations"]:
+            locations_list.append(str(location_id["id"]))
 
-    logger.info("Sending inventory level to the database")
-    for i in request_inventory_level:
-        for product_level in i['inventory_levels']:
-            insert_into = f"""
-            INSERT INTO inventory_level (inventory_id, inventory_level, last_modification_time, run_date)
-            values({product_level['inventory_item_id']}, {product_level['available']}, '{datetime.fromisoformat(product_level['updated_at'])}', '{date.today()}')
-            """
-            RdsConnector().query_database(insert_into)
+    logger.info("Fetch inventory level")
+
+    chunked_list = list(split_product_list(product_ids))
+    for i in chunked_list:
+        list_product_ids = {
+            'inventory_item_ids': ','.join(i),
+            'location_ids': ','.join(locations_list),
+            'limit': '250'
+        }
+        request_inventory_level = Response(MmeLovary().generate_url(
+            ShopifyRequestType.inventory_level), list_product_ids).send_request()
+        logger.info("Sending inventory level to the database")
+
+        for i in request_inventory_level:
+            for product_level in i['inventory_levels']:
+                insert_into = f"""
+                INSERT INTO inventory_level (inventory_id, inventory_level, last_modification_time, run_date)
+                values({product_level['inventory_item_id']}, {product_level['available']}, '{datetime.fromisoformat(product_level['updated_at'])}', '{date.today()}')
+                """
+                RdsConnector().query_database(insert_into)
