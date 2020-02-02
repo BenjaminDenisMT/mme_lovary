@@ -29,27 +29,34 @@ class ShopifyRequestType(Enum):
     shop_detail = "shop"
     product = "products"
     product_count = "products/count"
+    locations = "locations"
+    order = "orders"
+
+
+class ShopifyRequestType(Enum):
+    inventory_level = "inventory_levels"
+    shop_detail = "shop"
+    product = "products"
+    product_count = "products/count"
+    order = "orders"
+    locations = "locations"
 
 
 @dataclass
 class ShopifyIdentification:
     """Generate the url needed by the Shopify API."""
-    username: str
-    password: str
     shop: str
     url_base: str = "myshopify.com/admin/api/"
     version: str = ShopifyApiVersion.V4.value
 
     def generate_url(self, request_type: ShopifyRequestType) -> str:
-        url = f"https://{self.username}:{self.password}@{self.shop}.{self.url_base}{self.version}/{request_type.value}.json"
+        url = f"https://{self.shop}.{self.url_base}{self.version}/{request_type.value}.json"
         logger.info(url)
         return url
 
 
 @dataclass
 class MmeLovary(ShopifyIdentification):
-    username: str = os.environ['username']
-    password: str = os.environ['password']
     shop: str = "test-mme"
 
 
@@ -57,23 +64,49 @@ class MmeLovary(ShopifyIdentification):
 class Response:
     url: str
     request_parameters: Dict[str, Any] = None
+    username: str = os.environ['username']
+    password: str = os.environ['password']
 
     def send_request(self) -> Dict[str, str]:
         """Send a request and convert the response to a Json."""
-        try:
-            if not self.request_parameters:
-                r = requests.get(self.url)
-                logger.info(r.url)
+
+        response = True
+        request_response = []
+        while response:
+            try:
+                if not self.request_parameters:
+                    r = requests.get(
+                        self.url, 
+                        auth=(self.username, self.password)
+                    )
+                    logger.info(r.url)
+                else:
+                    r = requests.get(
+                        self.url,
+                        auth=(self.username, self.password),
+                        params=self.request_parameters
+                    )
+                    logger.info(r.url)
+
+                r.raise_for_status()
+
+            except RequestException as e:
+                raise ValueError(f"Request Exception cause by: {e}")
+
+            if not r.headers.get('Link'):
+                response = False
+
+            elif r.links.get('next'):
+                self.url = r.links['next']['url']
+                self.request_parameters = None
+
             else:
-                r = requests.get(self.url, params=self.request_parameters)
-                logger.info(r.url)
+                response = False
 
-            r.raise_for_status()
+            call = r.json()
+            request_response.append(call)
 
-        except RequestException as e:
-            raise ValueError(f"Request Exception cause by: {e}")
-
-        return r.json()
+        return request_response
 
 
 @dataclass
