@@ -12,6 +12,7 @@ CREATE TABLE products_informations (
 );
 
 CREATE TABLE daily_orders (
+    order_id VARCHAR(100) NOT NULL,
     variant_id VARCHAR(20) NOT NULL,
     title VARCHAR (100) NOT NULL,
     quantity INT NOT NULL,
@@ -19,7 +20,9 @@ CREATE TABLE daily_orders (
     variant_title VARCHAR (100) NOT NULL,
     name VARCHAR (100) NOT NULL,
     price FLOAT NOT NULL,
+    order_shipping_price FLOAT NOT NULL,
     total_discount FLOAT NOT NULL,
+    order_total_tax FLOAT NOT NULL,
     province VARCHAR (50) NOT NULL,
     country VARCHAR (50) NOT NULL,
     created_at DATE NOT NULL,
@@ -40,5 +43,3 @@ FROM
 LEFT JOIN
     products_informations
     ON inventory_level.inventory_id = products_informations.inventory_id;
-
-
