@@ -76,7 +76,7 @@ class Response:
             try:
                 if not self.request_parameters:
                     r = requests.get(
-                        self.url, 
+                        self.url,
                         auth=(self.username, self.password)
                     )
                     logger.info(r.url)
@@ -128,6 +128,7 @@ class RdsConnector:
             )
             cursor = connection.cursor()
             cursor.execute(query)
+            connection.commit()
 
         except psycopg2.Error as error:
             raise ValueError(f"Database error while connecting to RDS {error}")
@@ -145,15 +146,16 @@ class RdsConnector:
 def lambda_handler(event, context):
     products_information = []
     request_product = Response(MmeLovary().generate_url(ShopifyRequestType.product)).send_request()
-    for product in request_product['products']:
-        for variants in product['variants']:
-            products_information.append(
-                {variants['inventory_item_id']: {'product_name': product['title'], 'variants': variants['title']}}
-            )
+    for i in request_product:
+        for product in i['products']:
+            for variants in product['variants']:
+                products_information.append(
+                    {variants['inventory_item_id']: {'product_name': product['title'], 'variants': variants['title']}}
+                )
     for product_information in products_information:
         for product in product_information:
             insert_into = f"""
             INSERT INTO products_informations (inventory_id, product_name, variants)
-            values({product}, "{product_information[product]['product_name'].replace("'", "")}", "{product_information[product]['variants']}")
+            values({product}, '{product_information[product]['product_name'].replace("'", "")}', '{product_information[product]['variants']}')
             """
             RdsConnector().query_database(insert_into)
