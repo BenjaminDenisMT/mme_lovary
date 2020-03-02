@@ -2,12 +2,12 @@ import os
 import logging
 from enum import Enum
 from datetime import date
-from typing import Dict, Any
+from typing import Dict, Any, List
 from datetime import datetime
 from dataclasses import dataclass
 
 import requests
-import psycopg2
+# import psycopg2
 from requests.exceptions import RequestException
 
 
@@ -54,8 +54,8 @@ class MmeLovary(ShopifyIdentification):
 class Response:
     url: str
     request_parameters: Dict[str, Any] = None
-    username: str = os.environ['username']
-    password: str = os.environ['password']
+    username: str = 'de8a6e1d446aa624a581834ba8f8ee96'
+    password: str = '8a5a8daec3cc832e23c43c1e0669d9ce'
 
     def send_request(self) -> Dict[str, str]:
         """Send a request and convert the response to a Json."""
@@ -66,7 +66,7 @@ class Response:
             try:
                 if not self.request_parameters:
                     r = requests.get(
-                        self.url, 
+                        self.url,
                         auth=(self.username, self.password)
                     )
                     logger.info(r.url)
@@ -99,38 +99,38 @@ class Response:
         return request_response
 
 
-@dataclass
-class RdsConnector:
-    user: str = os.environ['user']
-    credential: str = os.environ['credential']
-    host: str = os.environ['host']
-    port: str = os.environ['port']
-    database: str = os.environ['database']
+# @dataclass
+# class RdsConnector:
+#     user: str = os.environ['user']
+#     credential: str = os.environ['credential']
+#     host: str = os.environ['host']
+#     port: str = os.environ['port']
+#     database: str = os.environ['database']
 
-    def query_database(self, query: str) -> None:
-        try:
-            connection = psycopg2.connect(
-                user=self.user,
-                password=self.credential,
-                host=self.host,
-                port=self.port,
-                database=self.database
-            )
-            cursor = connection.cursor()
-            cursor.execute(query)
-            connection.commit()
+#     def query_database(self, query: str) -> None:
+#         try:
+#             connection = psycopg2.connect(
+#                 user=self.user,
+#                 password=self.credential,
+#                 host=self.host,
+#                 port=self.port,
+#                 database=self.database
+#             )
+#             cursor = connection.cursor()
+#             cursor.execute(query)
+#             connection.commit()
 
-        except psycopg2.Error as error:
-            raise ValueError(f"Database error while connecting to RDS {error}")
+#         except psycopg2.Error as error:
+#             raise ValueError(f"Database error while connecting to RDS {error}")
 
-        except Exception as error:
-            raise ValueError(f"Error while connection to RDS {error}")
+#         except Exception as error:
+#             raise ValueError(f"Error while connection to RDS {error}")
 
-        finally:
-            if connection:
-                cursor.close()
-                connection.close()
-                logger.info("Connection closed")
+#         finally:
+#             if connection:
+#                 cursor.close()
+#                 connection.close()
+#                 logger.info("Connection closed")
 
 
 def split_product_list(list_invenoty_id: List[str], value: int = 50):
@@ -178,4 +178,8 @@ def lambda_handler(event, context):
                 INSERT INTO inventory_level (inventory_id, inventory_level, last_modification_time, run_date)
                 values({product_level['inventory_item_id']}, {product_level['available']}, '{datetime.fromisoformat(product_level['updated_at'])}', '{date.today()}')
                 """
-                RdsConnector().query_database(insert_into)
+                print(insert_into)
+                # RdsConnector().query_database(insert_into)
+
+if __name__ == "__main__":
+    lambda_handler(1, 2)

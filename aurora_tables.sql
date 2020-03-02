@@ -15,6 +15,7 @@ CREATE TABLE daily_orders (
     order_id VARCHAR(100) NOT NULL,
     variant_id VARCHAR(20) NOT NULL,
     title VARCHAR (100) NOT NULL,
+    financial_status VARCHAR (100) NOT NULL,
     quantity INT NOT NULL,
     sku VARCHAR (100) NOT NULL,
     variant_title VARCHAR (100) NOT NULL,
