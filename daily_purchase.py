@@ -140,69 +140,70 @@ def order_extract(extract_type: str = 'daily') -> List[Dict[str, str]]:
     previous_date = date.today() - timedelta(days=1)
     if extract_type == 'daily':
         for i in request_report:
-            if (not order['cancel_reason'] or order['cancel_reason'] == 'customer') and not order['test'] and (datetime.strptime(order['created_at'][:10], '%Y-%m-%d').date() == previous_date):
-                for item in order['line_items']:
-                    order_details = {
-                        "order_price": 0.0,
-                        "order_shipping_price": 0.0,
-                        "order_total_discount": 0.0,
-                        "order_total_tax": 0.0
-                    }
-                    order_details['order_id'] = str(order['id']) + "|" + str(item['id'])
-                    order_details["order_variant_id"] = item['variant_id']
-                    order_details["order_title"] = item['title'].replace("'", "")
-                    order_details["financial_status"] = order['financial_status']
-                    order_details["order_quantity"] = item['quantity']
-                    order_details["order_sku"] = item['sku']
-                    order_details["order_variant_title"] = item['variant_title'].replace("'", "")
-                    order_details["order_name"] = item['name'].replace("'", "")
-                    if order['financial_status'] == 'refunded':
-                        order_details["order_price"] += -float(item['price'])
-                        if order['cancelled_at']:
-                            order_details["order_created_at"] = order['cancelled_at']
-                        else:
-                            order_details["order_created_at"] = order['processed_at']
-                    elif order['financial_status'] == 'pending':
-                        order_details["order_price"] += float(item['price'])
-                        order_details["order_created_at"] = order['processed_at']
-                    elif order['financial_status'] == 'partially_refunded':
-                        for refunds in order['refunds']:
-                            if 'taxes' in refunds['note'].lower():
-                                for amount_refunded in refunds['order_adjustments']:
-                                    if '-' in amount_refunded['amount']:
-                                        order_details['order_total_tax'] += float(amount_refunded['amount']) / len(order['line_items'])
-                                    else:
-                                        order_details['order_total_tax'] += -float(amount_refunded['amount']) / len(order['line_items'])
+            for order in i['orders']:
+                if (not order['cancel_reason'] or order['cancel_reason'] == 'customer') and not order['test'] and (datetime.strptime(order['created_at'][:10], '%Y-%m-%d').date() == previous_date):
+                    for item in order['line_items']:
+                        order_details = {
+                            "order_price": 0.0,
+                            "order_shipping_price": 0.0,
+                            "order_total_discount": 0.0,
+                            "order_total_tax": 0.0
+                        }
+                        order_details['order_id'] = str(order['id']) + "|" + str(item['id'])
+                        order_details["order_variant_id"] = item['variant_id']
+                        order_details["order_title"] = item['title'].replace("'", "")
+                        order_details["financial_status"] = order['financial_status']
+                        order_details["order_quantity"] = item['quantity']
+                        order_details["order_sku"] = item['sku']
+                        order_details["order_variant_title"] = item['variant_title'].replace("'", "")
+                        order_details["order_name"] = item['name'].replace("'", "")
+                        if order['financial_status'] == 'refunded':
+                            order_details["order_price"] += -float(item['price'])
+                            if order['cancelled_at']:
+                                order_details["order_created_at"] = order['cancelled_at']
                             else:
-                                for refunded_item in refunds['refund_line_items']:
-                                    if item['id'] == refunded_item['line_item_id']:
-                                        order_details["order_price"] += -refunded_item['subtotal']
-                                        break
+                                order_details["order_created_at"] = order['processed_at']
+                        elif order['financial_status'] == 'pending':
+                            order_details["order_price"] += float(item['price'])
+                            order_details["order_created_at"] = order['processed_at']
+                        elif order['financial_status'] == 'partially_refunded':
+                            for refunds in order['refunds']:
+                                if 'taxes' in refunds['note'].lower():
+                                    for amount_refunded in refunds['order_adjustments']:
+                                        if '-' in amount_refunded['amount']:
+                                            order_details['order_total_tax'] += float(amount_refunded['amount']) / len(order['line_items'])
+                                        else:
+                                            order_details['order_total_tax'] += -float(amount_refunded['amount']) / len(order['line_items'])
+                                else:
+                                    for refunded_item in refunds['refund_line_items']:
+                                        if item['id'] == refunded_item['line_item_id']:
+                                            order_details["order_price"] += -refunded_item['subtotal']
+                                            break
 
-                        order_details["order_price"] += float(item['price'])
-                        order_details["order_created_at"] = order['processed_at']
-                    else:
-                        order_details["order_price"] += float(item['price'])
-                        order_details["order_created_at"] = order['created_at']
-                    order_details["order_shipping_price"] += float(order['shipping_lines'][0]['price']) / len(order['line_items']) if len(order['shipping_lines']) else 0
-                    order_details["order_total_discount"] += float(order["total_discounts"]) / len(order['line_items'])
-                    order_details["order_total_tax"] += float(order["total_tax"]) / len(order['line_items'])
-                    if 'billing_address' in order:
-                        order_details["order_billing_address"] = order['billing_address']['province']
-                        order_details["order_billing_country"] = order['billing_address']['country']
-                    else:
-                        order_details["order_billing_address"] = 'None'
-                        order_details["order_billing_country"] = 'None'
-                    order_details["order_updated_at"] = order['updated_at']
-                    if order['source_name'] == 'web':
-                        order_details["order_source_name"] = 'Online Store'
-                    elif order['source_name'] == '580111':
-                        order_details["order_source_name"] = 'Online Store'
-                    elif order['source_name'] == 'pos':
-                        order_details["order_source_name"] = 'Foire'
-                    elif order['source_name'] == 'shopify_draft_order':
-                        order_details["order_source_name"] = 'Distributeur'
-                    order_list.append(order_details)
+                            order_details["order_price"] += float(item['price'])
+                            order_details["order_created_at"] = order['processed_at']
+                        else:
+                            order_details["order_price"] += float(item['price'])
+                            order_details["order_created_at"] = order['created_at']
+                        order_details["order_shipping_price"] += float(order['shipping_lines'][0]['price']) / len(order['line_items']) if len(order['shipping_lines']) else 0
+                        order_details["order_total_discount"] += float(order["total_discounts"]) / len(order['line_items'])
+                        order_details["order_total_tax"] += float(order["total_tax"]) / len(order['line_items'])
+                        if 'billing_address' in order:
+                            order_details["order_billing_address"] = order['billing_address']['province']
+                            order_details["order_billing_country"] = order['billing_address']['country']
+                        else:
+                            order_details["order_billing_address"] = 'None'
+                            order_details["order_billing_country"] = 'None'
+                        order_details["order_updated_at"] = order['updated_at']
+                        if order['source_name'] == 'web':
+                            order_details["order_source_name"] = 'Online Store'
+                        elif order['source_name'] == '580111':
+                            order_details["order_source_name"] = 'Online Store'
+                        elif order['source_name'] == 'pos':
+                            order_details["order_source_name"] = 'Foire'
+                        elif order['source_name'] == 'shopify_draft_order':
+                            order_details["order_source_name"] = 'Distributeur'
+                        order_list.append(order_details)
 
     elif extract_type == 'all':
         for i in request_report:
