@@ -28,7 +28,8 @@ CREATE TABLE daily_orders (
     country VARCHAR (50) NOT NULL,
     created_at DATE NOT NULL,
     updated_at DATE NOT NULL,
-    source_name VARCHAR (50) NOT NULL
+    source_name VARCHAR (50) NOT NULL,
+    tags VARCHAR(75)
 );
 
 
@@ -44,3 +45,40 @@ FROM
 LEFT JOIN
     products_informations
     ON inventory_level.inventory_id = products_informations.inventory_id;
+
+WITH  inventory_level AS (
+    SELECT
+        inventory_level.inventory_id,
+        inventory_level,
+        last_modification_time,
+        run_date,
+        product_name,
+        variants
+    FROM 
+        inventory_level
+    LEFT JOIN
+        products_informations
+        ON inventory_level.inventory_id = products_informations.inventory_id
+)
+SELECT 
+    created_at AS Date_,
+    title AS item_type,
+    variant_title AS item_size,
+    count(variant_id) AS vente,
+    MAX(inventory_level) AS stock_apres_vente
+FROM 
+    daily_orders
+LEFT JOIN
+    inventory_level
+    ON daily_orders.title = inventory_level.product_name
+    AND daily_orders.variant_title = inventory_level.variants
+    AND daily_orders.created_at = CAST(inventory_level.run_date - INTERVAL '1 DAY' AS DATE)
+    
+GROUP BY
+    created_at,
+    title,
+    variant_title
+order BY 
+    created_at DESC 
+
+

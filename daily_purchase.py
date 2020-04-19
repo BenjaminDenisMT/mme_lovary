@@ -149,6 +149,7 @@ def order_extract(extract_type: str = 'daily') -> List[Dict[str, str]]:
                             "order_total_discount": 0.0,
                             "order_total_tax": 0.0
                         }
+                        order_details['tags'] = order['tags'] if order['tags'] else 'None'
                         order_details['order_id'] = str(order['id']) + "|" + str(item['id'])
                         order_details["order_variant_id"] = item['variant_id']
                         order_details["order_title"] = item['title'].replace("'", "")
@@ -216,6 +217,7 @@ def order_extract(extract_type: str = 'daily') -> List[Dict[str, str]]:
                             "order_total_discount": 0.0,
                             "order_total_tax": 0.0
                         }
+                        order_details['tags'] = order['tags'] if order['tags'] else 'None'
                         order_details['order_id'] = str(order['id']) + "|" + str(item['id'])
                         order_details["order_variant_id"] = item['variant_id']
                         order_details["order_title"] = item['title'].replace("'", "")
@@ -279,7 +281,7 @@ def lambda_handler(event, context):
     order_to_sent = order_extract()
     for i in order_to_sent:
         insert_into = f"""
-        INSERT INTO daily_orders (order_id, variant_id, title, financial_status, quantity, sku, variant_title, name, price, order_shipping_price, total_discount, order_total_tax, province, country, created_at, updated_at, source_name)
+        INSERT INTO daily_orders (order_id, variant_id, title, financial_status, quantity, sku, variant_title, name, price, order_shipping_price, total_discount, order_total_tax, province, country, created_at, updated_at, source_name, tags)
         values(
             '{i['order_id']}',
             '{i['order_variant_id']}',
@@ -297,7 +299,8 @@ def lambda_handler(event, context):
             '{i['order_billing_country']}',
             '{i['order_created_at']}',
             '{i['order_updated_at']}',
-            '{i["order_source_name"]}'
+            '{i['order_source_name']}'
+            '{i['tags']}'
         )
         """
         RdsConnector().query_database(insert_into)

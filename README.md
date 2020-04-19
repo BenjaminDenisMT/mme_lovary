@@ -1,2 +1,4 @@
 # mme_lovary
-Code needed for the mme l'ovary contract
+https://github.com/BenjaminDenisMT/mme_lovary/workflows/Deploy to AWS/badge.svg
+
+Package and deploy script to extract data from Shopify to AWS
