@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: zip  package
+    - name: zip package
       run: zip -r mme_lovary.zip .
     - name: default deploy
       uses: appleboy/lambda-action@master
