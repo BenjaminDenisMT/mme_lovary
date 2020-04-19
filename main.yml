@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: zip package
-      run: zip -r mme_lovary.zip .
+      run: zip -r mme_lovary/mme_lovary.zip mme_lovary/. -x .gitignore aurora_tables.sql main.yml README.md inventory_level.py
     - name: default deploy
       uses: appleboy/lambda-action@master
       with:
@@ -21,3 +21,4 @@ jobs:
         aws_region: ${{ secrets.AWS_REGION }}
         function_name: lovary_daily_purchase
         zip_file: mme_lovary/mme_lovary.zip
+
