@@ -7,7 +7,7 @@ from datetime import datetime
 from dataclasses import dataclass
 
 import requests
-# import psycopg2
+import psycopg2
 from requests.exceptions import RequestException
 
 
@@ -99,38 +99,38 @@ class Response:
         return request_response
 
 
-# @dataclass
-# class RdsConnector:
-#     user: str = os.environ['user']
-#     credential: str = os.environ['credential']
-#     host: str = os.environ['host']
-#     port: str = os.environ['port']
-#     database: str = os.environ['database']
+@dataclass
+class RdsConnector:
+    user: str = os.environ['user']
+    credential: str = os.environ['credential']
+    host: str = os.environ['host']
+    port: str = os.environ['port']
+    database: str = os.environ['database']
 
-#     def query_database(self, query: str) -> None:
-#         try:
-#             connection = psycopg2.connect(
-#                 user=self.user,
-#                 password=self.credential,
-#                 host=self.host,
-#                 port=self.port,
-#                 database=self.database
-#             )
-#             cursor = connection.cursor()
-#             cursor.execute(query)
-#             connection.commit()
+    def query_database(self, query: str) -> None:
+        try:
+            connection = psycopg2.connect(
+                user=self.user,
+                password=self.credential,
+                host=self.host,
+                port=self.port,
+                database=self.database
+            )
+            cursor = connection.cursor()
+            cursor.execute(query)
+            connection.commit()
 
-#         except psycopg2.Error as error:
-#             raise ValueError(f"Database error while connecting to RDS {error}")
+        except psycopg2.Error as error:
+            raise ValueError(f"Database error while connecting to RDS {error}")
 
-#         except Exception as error:
-#             raise ValueError(f"Error while connection to RDS {error}")
+        except Exception as error:
+            raise ValueError(f"Error while connection to RDS {error}")
 
-#         finally:
-#             if connection:
-#                 cursor.close()
-#                 connection.close()
-#                 logger.info("Connection closed")
+        finally:
+            if connection:
+                cursor.close()
+                connection.close()
+                logger.info("Connection closed")
 
 
 def split_product_list(list_invenoty_id: List[str], value: int = 50):
@@ -179,7 +179,7 @@ def lambda_handler(event, context):
                 values({product_level['inventory_item_id']}, {product_level['available']}, '{datetime.fromisoformat(product_level['updated_at'])}', '{date.today()}')
                 """
                 print(insert_into)
-                # RdsConnector().query_database(insert_into)
+                RdsConnector().query_database(insert_into)
 
 if __name__ == "__main__":
     lambda_handler(1, 2)

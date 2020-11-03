@@ -54,8 +54,8 @@ class MmeLovary(ShopifyIdentification):
 class Response:
     url: str
     request_parameters: Dict[str, Any] = None
-    username: str = os.environ['username']
-    password: str = os.environ['password']
+    username: str = "de8a6e1d446aa624a581834ba8f8ee96"
+    password: str = "8a5a8daec3cc832e23c43c1e0669d9ce"
 
     def send_request(self) -> Dict[str, str]:
         """Send a request and convert the response to a Json."""
@@ -156,7 +156,7 @@ def order_extract(extract_type: str = 'daily') -> List[Dict[str, str]]:
                         order_details["financial_status"] = order['financial_status']
                         order_details["order_quantity"] = item['quantity']
                         order_details["order_sku"] = item['sku']
-                        order_details["order_variant_title"] = item['variant_title'].replace("'", "")
+                        order_details["order_variant_title"] = item['variant_title'].replace("'", "") if item['variant_title'] else 'None'
                         order_details["order_name"] = item['name'].replace("'", "")
                         if order['financial_status'] == 'refunded':
                             order_details["order_price"] += -float(item['price'])
@@ -303,4 +303,8 @@ def lambda_handler(event, context):
             '{i['tags']}'
         )
         """
+        print(insert_into)
         RdsConnector().query_database(insert_into)
+
+if __name__ == "__main__":
+    lambda_handler(1, 2)
