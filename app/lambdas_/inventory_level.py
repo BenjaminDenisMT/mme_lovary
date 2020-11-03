@@ -181,5 +181,6 @@ def lambda_handler(event, context):
                 print(insert_into)
                 RdsConnector().query_database(insert_into)
 
+
 if __name__ == "__main__":
     lambda_handler(1, 2)
