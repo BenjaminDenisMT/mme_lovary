@@ -54,8 +54,8 @@ class MmeLovary(ShopifyIdentification):
 class Response:
     url: str
     request_parameters: Dict[str, Any] = None
-    username: str = "de8a6e1d446aa624a581834ba8f8ee96"
-    password: str = "8a5a8daec3cc832e23c43c1e0669d9ce"
+    username: str = os.environ['user']
+    password: str = os.environ['credential']
 
     def send_request(self) -> Dict[str, str]:
         """Send a request and convert the response to a Json."""
